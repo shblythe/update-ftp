@@ -95,4 +95,5 @@ def update(ftp_host,folders,ftp_root_folder):
 	ftp_host.rmtree(remote)
 	ftp_host.mkdir(remote)
 	mirror_to_remote(ftp_host,folder,remote)
+    return backup_folder
 
