@@ -4,6 +4,7 @@ import os,ftputil
 from ftputil import FTPHost
 import posixpath
 import time
+import re
 
 def clear_remote(ftp_host,destination):
     # Cut off excess slashes.
@@ -42,11 +43,15 @@ def mirror_to_remote(ftp_host,local,remote):
 		pass
 
 	# Upload all files
+	pattern=re.compile("\.cgi$")
 	for filename in files:
 	    print filename
 	    local_source_file=os.path.join(local,filename)
 	    remote_dest_file=posixpath.join(remote,filename)
 	    ftp_host.upload(local_source_file,remote_dest_file)
+	    # Make cgi files executable
+	    if pattern.search(remote_dest_file):
+		ftp_host.chmod(remote_dest_file,0o755)
 
 def mirror_to_local(ftp_host,source,destination):
     """Download remote directory found by source to destination."""
