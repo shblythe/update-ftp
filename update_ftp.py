@@ -6,16 +6,6 @@ import posixpath
 import time
 import re
 
-def clear_remote(ftp_host,destination):
-    # Cut off excess slashes.
-    destination = destination.rstrip("/")
-
-    for current_dir, subdirs, files in ftp_host.walk(source):
-        # remove . and ..
-        for subdir in subdirs[:]:
-            if subdir in ['.','..']:
-                subdirs.remove(subdir)
-
 def mirror_to_remote(ftp_host,local,remote):
     """Upload remote directory found by local to remote."""
     # Cut off excess slashes.
