@@ -92,16 +92,19 @@ def mirror_to_local(ftp_host,source,destination,regex=None):
 
 
 def update(ftp_host,folders,ftp_root_folder,regex=None):
-    backup_folder='backup'+time.strftime("%Y%m%d%H%M")+'/'
-    os.mkdir(backup_folder)
+    if not regex:
+        backup_folder='backup'+time.strftime("%Y%m%d%H%M")+'/'
+        os.mkdir(backup_folder)
+    else:
+        backup_folder=None
     for folder in folders:
         remote=ftp_root_folder+folder
-        local=os.path.join(backup_folder,folder)
-        print remote+" to "+local
-        if not os.path.exists(local):
-            os.mkdir(local)
-        mirror_to_local(ftp_host,remote,local,regex)
         if not regex:
+            local=os.path.join(backup_folder,folder)
+            print remote+" to "+local
+            if not os.path.exists(local):
+                os.mkdir(local)
+            mirror_to_local(ftp_host,remote,local,regex)
             ftp_host.rmtree(remote)
             ftp_host.mkdir(remote)
         mirror_to_remote(ftp_host,folder,remote,regex)
