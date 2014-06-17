@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: sts=4 et shiftwidth=4:
 
 import os,ftputil
 from ftputil import FTPHost
@@ -6,8 +7,11 @@ import posixpath
 import time
 import re
 
-def mirror_to_remote(ftp_host,local,remote):
-    """Upload remote directory found by local to remote."""
+def mirror_to_remote(ftp_host,local,remote,regex=None):
+    """
+    Upload remote directory found by local to remote.
+    Limited to files which match regex if passed.
+    """
     # Cut off excess slashes.
     local = local.rstrip("/")
     remote = remote.rstrip("/")
@@ -28,24 +32,30 @@ def mirror_to_remote(ftp_host,local,remote):
             ftp_host.mkdir(posixpath.join(remote,os.path.join(subdir)))
 
     # Upload all files
-    pattern=re.compile("\.cgi$")
+    cgiPattern=re.compile("\.cgi$")
     cwd=os.getcwd()
     if local:
         os.chdir(local)
     for current_dir, subdirs, files in os.walk('.'):
+        if regex:
+            filePattern=re.compile(regex)
         for filename in files:
-            filepath=os.path.join(current_dir,filename)
-            local_source_file=filepath
-            remote_dest_file=posixpath.join(remote,filepath)
-            print local_source_file," to ",remote_dest_file
-            ftp_host.upload(local_source_file,remote_dest_file)
-            # Make cgi files executable
-            if pattern.search(remote_dest_file):
-                ftp_host.chmod(remote_dest_file,0o755)
+            if (not regex) or filePattern.search(filename):
+                filepath=os.path.join(current_dir,filename)
+                local_source_file=filepath
+                remote_dest_file=posixpath.join(remote,filepath)
+                print local_source_file," to ",remote_dest_file
+                ftp_host.upload(local_source_file,remote_dest_file)
+                # Make cgi files executable
+                if cgiPattern.search(remote_dest_file):
+                    ftp_host.chmod(remote_dest_file,0o755)
     os.chdir(cwd)
 
-def mirror_to_local(ftp_host,source,destination):
-    """Download remote directory found by source to destination."""
+def mirror_to_local(ftp_host,source,destination,regex=None):
+    """
+    Download remote directory found by source to destination.
+    Limited to files which match regex if passed.
+    """
     # Cut off excess slashes.
     source = source.rstrip("/")
     destination = destination.rstrip("/")
@@ -72,13 +82,16 @@ def mirror_to_local(ftp_host,source,destination):
             if not os.path.exists(subdir_full):
                 os.mkdir(subdir_full)
         # Download all files in current directory.
+        if regex:
+            filePattern=re.compile(regex)
         for filename in files:
-            target_file = os.path.join(current_destination, filename)
-            remote_file = posixpath.join(source, current_dir, filename)
-            ftp_host.download(remote_file,target_file)
+            if (not regex) or filePattern.search(filename):
+                target_file = os.path.join(current_destination, filename)
+                remote_file = posixpath.join(source, current_dir, filename)
+                ftp_host.download(remote_file,target_file)
 
 
-def update(ftp_host,folders,ftp_root_folder):
+def update(ftp_host,folders,ftp_root_folder,regex=None):
     backup_folder='backup'+time.strftime("%Y%m%d%H%M")+'/'
     os.mkdir(backup_folder)
     for folder in folders:
@@ -87,8 +100,10 @@ def update(ftp_host,folders,ftp_root_folder):
         print remote+" to "+local
         if not os.path.exists(local):
             os.mkdir(local)
-        mirror_to_local(ftp_host,remote,local)
-        ftp_host.rmtree(remote)
-        ftp_host.mkdir(remote)
-        mirror_to_remote(ftp_host,folder,remote)
+        mirror_to_local(ftp_host,remote,local,regex)
+        if not regex:
+            ftp_host.rmtree(remote)
+            ftp_host.mkdir(remote)
+        mirror_to_remote(ftp_host,folder,remote,regex)
     return backup_folder
+
