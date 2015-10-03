@@ -29,7 +29,10 @@ def mirror_to_remote(ftp_host,local,remote,regex=None):
                 subdirs.remove(subdir)
 
         for subdir in subdirs:
-            ftp_host.mkdir(posixpath.join(remote,os.path.join(subdir)))
+            try:
+                ftp_host.mkdir(posixpath.join(remote,os.path.join(subdir)))
+            except ftputil.error.PermanentError as e:
+                print e.strerror
 
     # Upload all files
     cgiPattern=re.compile("\.cgi$")
