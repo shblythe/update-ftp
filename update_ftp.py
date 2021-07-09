@@ -16,7 +16,7 @@ def mirror_to_remote(ftp_host,local,remote,regex=None):
     local = local.rstrip("/")
     remote = remote.rstrip("/")
 
-    print local+" to "+remote
+    print(local+" to "+remote)
     for current_dir, subdirs, files in os.walk(local):
         if local:
             current_destination = posixpath.join(remote,
@@ -32,7 +32,7 @@ def mirror_to_remote(ftp_host,local,remote,regex=None):
             try:
                 ftp_host.mkdir(posixpath.join(remote,os.path.join(subdir)))
             except ftputil.error.PermanentError as e:
-                print e.strerror
+                print(e.strerror)
 
     # Upload all files
     cgiPattern=re.compile("\.cgi$")
@@ -46,8 +46,9 @@ def mirror_to_remote(ftp_host,local,remote,regex=None):
             if (not regex) or filePattern.search(filename):
                 filepath=os.path.join(current_dir,filename)
                 local_source_file=filepath
+                filepath=filepath.replace(os.sep,posixpath.sep)
                 remote_dest_file=posixpath.join(remote,filepath)
-                print local_source_file," to ",remote_dest_file
+                print(local_source_file," to ",remote_dest_file)
                 try:
                     ftp_host.upload(local_source_file,remote_dest_file)
                 except AttributeError:
@@ -67,7 +68,7 @@ def sftp_walk(sftp_host,remotepath):
             folders.append(f.filename)
         else:
             files.append(f.filename)
-    print (path,folders,files)
+    print(path,folders,files)
     yield path,folders,files
     for folder in folders:
         new_path=os.path.join(remotepath,folder)
@@ -77,11 +78,15 @@ def sftp_walk(sftp_host,remotepath):
 def sftp_rmtree(sftp_host,remotepath):
     path=remotepath
     for f in sftp_host.listdir_attr(remotepath):
-        new_path=os.path.join(remotepath,f.filename)
+        new_path=posixpath.join(remotepath,f.filename)
         if S_ISDIR(f.st_mode):
             sftp_rmtree(sftp_host,new_path)
         else:
-            sftp_host.unlink(new_path)
+            try:
+                sftp_host.unlink(new_path)
+            except FileNotFoundError:
+                print("Couldn't delete "+new_path)
+                exit(1)
     sftp_host.rmdir(remotepath)
 
 def mirror_to_local(ftp_host,source,destination,regex=None):
@@ -113,7 +118,7 @@ def mirror_to_local(ftp_host,source,destination,regex=None):
         # Create all subdirectories lest they exist.
         for subdir in subdirs:
             subdir_full = os.path.join(current_destination, subdir)
-            print subdir_full
+            print(subdir_full)
             if not os.path.exists(subdir_full):
                 os.mkdir(subdir_full)
         # Download all files in current directory.
@@ -139,7 +144,7 @@ def update(ftp_host,folders,ftp_root_folder,regex=None):
         remote=ftp_root_folder+folder
         if not regex:
             local=os.path.join(backup_folder,folder)
-            print remote+" to "+local
+            print(remote+" to "+local)
             if not os.path.exists(local):
                 os.mkdir(local)
             mirror_to_local(ftp_host,remote,local,regex)
